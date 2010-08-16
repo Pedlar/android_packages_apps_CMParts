@@ -195,6 +195,8 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                         return "Twitter";
                 else if(pkg.equals("jp.r246.twicca"))
                         return "Twicca";
+                else if(pkg.equals("com.android.phone"))
+                        return "Missed Call"; //Say Missed Call instead of "Dialer" as people think its missing.
 
                 return null;
         }
