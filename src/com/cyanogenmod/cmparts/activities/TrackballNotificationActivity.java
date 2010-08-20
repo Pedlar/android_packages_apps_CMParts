@@ -139,6 +139,9 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 			}
 		}
 		if(found) {
+			if(temp2[3] == null) {
+				temp2[3] = "New";
+			}
 			String tempcolor = temp2[0] +"="+temp2[1]+"="+temp2[2]+"="+temp2[3];
 			temp[i] = tempcolor;
 		} else {
@@ -340,7 +343,9 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         	testColor.setTitle(R.string.color_trackball_test_title);
 		String[] packageInfo = findPackage(packageList[i]);
 		if(packageInfo != null) {
+			Log.i("MakeList", "Check for none in "+packageList[i]);
             		if(packageInfo[2].matches("none")) {
+				Log.i("MakeList", "Found none");
                 		testColor.setEnabled(false);
             		} else {
                 		testColor.setEnabled(true);
