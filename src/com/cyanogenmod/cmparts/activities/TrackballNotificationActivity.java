@@ -1,7 +1,3 @@
-/*
-Set set = new HashSet(Arrays.asList(array));
-String[] array2 = (String[])(set.toArray(new String[set.size()]));
-*/
 package com.cyanogenmod.cmparts.activities;
 
 import com.cyanogenmod.cmparts.R;
@@ -139,11 +135,15 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 			}
 		}
 		if(found) {
-			if(temp2[3] == null) {
-				temp2[3] = "New";
+			try {
+				String tempcolor = temp2[0] +"="+temp2[1]+"="+temp2[2]+"="+temp2[3];
+				temp[i] = tempcolor;
+			} catch (ArrayIndexOutOfBoundsException e) {
+				//Making array changes, if they aren't new, they will error. Have to force them to be reset unfortunately.
+				//Pedlar
+				Settings.System.putString(getContentResolver(), Settings.System.NOTIFICATION_PACKAGE_COLORS, "");
+				Toast.makeText(this, "Unfortunately there was an array error. Your colors have been reset, we apologize for any inconveience.", Toast.LENGTH_LONG).show();
 			}
-			String tempcolor = temp2[0] +"="+temp2[1]+"="+temp2[2]+"="+temp2[3];
-			temp[i] = tempcolor;
 		} else {
 			int x = 0;
 			//Get the last one
@@ -341,15 +341,9 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                 testColor.setKey(packageList[i]+"_test");
         	testColor.setSummary(R.string.color_trackball_test_summary);
         	testColor.setTitle(R.string.color_trackball_test_title);
-		String[] packageInfo = findPackage(packageList[i]);
-		if(packageInfo != null) {
-			Log.i("MakeList", "Check for none in "+packageList[i]);
-            		if(packageInfo[2].matches("none")) {
-				Log.i("MakeList", "Found none");
-                		testColor.setEnabled(false);
-            		} else {
-                		testColor.setEnabled(true);
-            		}
+      		if(packageValues != null) {
+			Log.i("MakeList", "Checking if "+packageValues[0]+" has color "+packageValues[1]);
+                	testColor.setEnabled(!packageValues[1].equals("none"));
 		}
         	appName.addPreference(testColor);
         }
