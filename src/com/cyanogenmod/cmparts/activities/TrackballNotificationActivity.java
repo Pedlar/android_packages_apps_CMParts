@@ -1,3 +1,7 @@
+/*
+Set set = new HashSet(Arrays.asList(array));
+String[] array2 = (String[])(set.toArray(new String[set.size()]));
+*/
 package com.cyanogenmod.cmparts.activities;
 
 import com.cyanogenmod.cmparts.R;
@@ -82,6 +86,8 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 	public String[] findPackage(String pkg) {
 		String mBaseString = Settings.System.getString(getContentResolver(), Settings.System.NOTIFICATION_PACKAGE_COLORS);
 		String[] mBaseArray = getArray(mBaseString);
+		if(mBaseArray == null)
+			return null;
 		for(int i = 0; i < mBaseArray.length; i++) {
 			if(isNull(mBaseArray[i])) {
 				continue;
