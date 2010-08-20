@@ -24,6 +24,8 @@ import android.content.pm.PackageInfo;
 import java.util.List;
 import java.util.Random;
 import android.os.Handler;
+import java.util.Set;
+import java.util.Arrays;
 
 public class TrackballNotificationActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener {
 
@@ -42,6 +44,12 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 	public CheckBoxPreference globalOrder;
 	public CheckBoxPreference globalBlend;
 	public Preference globalTest;
+
+        public String[] uniqueArray(String[] array) {
+                Set set = new HashSet(Arrays.asList(array));
+                String[] array2 = (String[])(set.toArray(new String[set.size()]));
+                return array2;
+        }
 
 	public boolean isNull(String mString) {
 		if(mString == null || mString.matches("null")
@@ -98,7 +106,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 		return null;
 	}
 
-	public void updatePackage(String pkg, String color, String blink) {
+	public void updatePackage(String pkg, String color, String blink, String cat) {
 		String stringtemp = Settings.System.getString(getContentResolver(), Settings.System.NOTIFICATION_PACKAGE_COLORS);
 		String[] temp = getArray(stringtemp);
 		int i;
@@ -111,17 +119,20 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 				continue;
 			}
 			if(temp2[0].matches(pkg)) {
-				if(blink.matches("0")) {
-					temp2[1] = color;
-				} else {
+                                if(!cat.matches("0") {
+                                        temp2[3] = cat;
+                                }
+				else if(!blink.matches("0")) {
 					temp2[2] = blink;
+				} else {
+					temp2[1] = color;
 				}
 				found = true;
 				break;
 			}
 		}
 		if(found) {
-			String tempcolor = temp2[0] +"="+temp2[1]+"="+temp2[2];
+			String tempcolor = temp2[0] +"="+temp2[1]+"="+temp2[2]+"="+temp2[3];
 			temp[i] = tempcolor;
 		} else {
 			int x = 0;
@@ -131,10 +142,13 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 					break;
 			}
 			String tempcolor;
-			if(blink.matches("0")) {
-				tempcolor = pkg+"="+color+"=2";
+                        if(!cat.matches("0")) {
+                                tempcolor = pkg+"=color=2="+cat;
+                        }
+			else if(!blink.matches("0")) {
+                                tempcolor = pkg+"=black="+blink+"=New";
 			} else {
-				tempcolor = pkg+"=black="+blink;
+				tempcolor = pkg+"="+color+"=2=New";
 			}
 			temp[x] = tempcolor;
 		}
@@ -200,6 +214,8 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                         return "Twitter";
                 else if(pkg.equals("jp.r246.twicca"))
                         return "Twicca";
+                else if(pkg.equals("com.android.phone"))
+                        return "Missed Call"; //Say Missed Call instead of "Dialer" as people think its missing.
 
                 return null;
         }
@@ -242,6 +258,26 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         	}
         	return list;
 	}
+
+        private getCategoryList() {
+                String mBaseString = Settings.System.getString(getContentResolver(), Settings.System.NOTIFICATION_PACKAGE_COLORS);
+		String[] mBaseArray = getArray(mBaseString);
+                String[] catList;
+                boolean found = false;
+		for(int i = 0; i < mBaseArray.length; i++) {
+			String[] temp getPackageAndColorAndBlink(mBaseArray[i]);
+                        if(isNull(temp[3])) {
+                                continue;
+                        }
+                        catList[i] = temp[3];
+                        found = true;
+		}
+                if(!found) {
+		      return null;
+                } else {
+                      return uniqueArray(catList);
+                }
+        }
 
 	private PreferenceScreen createPreferenceScreen() {
 		//The root of our system
@@ -374,7 +410,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         String key = preference.getKey().toString();
         String pkg = key.substring(0, key.lastIndexOf("_"));
         if(key.endsWith("_blink")) {
-            updatePackage(pkg, "", value);
+            updatePackage(pkg, "", value, "0");
         } else if (key.endsWith("_color")) {
             updatePackage(pkg, value, "0");
 
@@ -561,7 +597,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
             }
 
             public void colorChanged(int color) {
-		updatePackage(mGlobalPackage, convertToARGB(color), "0");
+		updatePackage(mGlobalPackage, convertToARGB(color), "0", "0");
             }
     };
 
