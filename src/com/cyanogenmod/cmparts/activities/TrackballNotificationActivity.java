@@ -28,6 +28,9 @@ import android.content.pm.PackageInfo;
 import java.util.List;
 import java.util.Random;
 import android.os.Handler;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 
 public class TrackballNotificationActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener {
 
@@ -41,6 +44,17 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 	public int mGlobalPulse = 0;
 	public int mGlobalSuccession = 0;
 	public int mGlobalBlend = 0;
+	public CheckBoxPreference globalSuccession;
+	public CheckBoxPreference globalRandom;
+	public CheckBoxPreference globalOrder;
+	public CheckBoxPreference globalBlend;
+	public Preference globalTest;
+
+        public String[] uniqueArray(String[] array) {
+                Set set = new HashSet(Arrays.asList(array));
+                String[] array2 = (String[])(set.toArray(new String[set.size()]));
+                return array2;
+        }
 
 	public boolean isNull(String mString) {
 		if(mString == null || mString.matches("null")
@@ -99,7 +113,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 		return null;
 	}
 
-	public void updatePackage(String pkg, String color, String blink) {
+	public void updatePackage(String pkg, String color, String blink, String cat) {
 		String stringtemp = Settings.System.getString(getContentResolver(), Settings.System.NOTIFICATION_PACKAGE_COLORS);
 		String[] temp = getArray(stringtemp);
 		int i;
@@ -112,17 +126,20 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 				continue;
 			}
 			if(temp2[0].matches(pkg)) {
-				if(blink.matches("0")) {
-					temp2[1] = color;
-				} else {
+                                if(!cat.matches("0")) {
+                                        temp2[3] = cat;
+                                }
+				else if(!blink.matches("0")) {
 					temp2[2] = blink;
+				} else {
+					temp2[1] = color;
 				}
 				found = true;
 				break;
 			}
 		}
 		if(found) {
-			String tempcolor = temp2[0] +"="+temp2[1]+"="+temp2[2];
+			String tempcolor = temp2[0] +"="+temp2[1]+"="+temp2[2]+"="+temp2[3];
 			temp[i] = tempcolor;
 		} else {
 			int x = 0;
@@ -132,10 +149,13 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 					break;
 			}
 			String tempcolor;
-			if(blink.matches("0")) {
-				tempcolor = pkg+"="+color+"=2";
+                        if(!cat.matches("0")) {
+                                tempcolor = pkg+"=color=2="+cat;
+                        }
+			else if(!blink.matches("0")) {
+                                tempcolor = pkg+"=black="+blink+"=New";
 			} else {
-				tempcolor = pkg+"=black="+blink;
+				tempcolor = pkg+"="+color+"=2=New";
 			}
 			temp[x] = tempcolor;
 		}
@@ -201,6 +221,8 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                         return "Twitter";
                 else if(pkg.equals("jp.r246.twicca"))
                         return "Twicca";
+                else if(pkg.equals("com.android.phone"))
+                        return "Missed Call"; //Say Missed Call instead of "Dialer" as people think its missing.
 
                 return null;
         }
@@ -243,6 +265,26 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         	}
         	return list;
 	}
+
+        private String[] getCategoryList() {
+                String mBaseString = Settings.System.getString(getContentResolver(), Settings.System.NOTIFICATION_PACKAGE_COLORS);
+		String[] mBaseArray = getArray(mBaseString);
+                String[] catList = new String[30];
+                boolean found = false;
+		for(int i = 0; i < mBaseArray.length; i++) {
+			String[] temp = getPackageAndColorAndBlink(mBaseArray[i]);
+                        if(isNull(temp[3])) {
+                                continue;
+                        }
+                        catList[i] = temp[3];
+                        found = true;
+		}
+                if(!found) {
+		      return null;
+                } else {
+                      return uniqueArray(catList);
+                }
+        }
 
 	private PreferenceScreen createPreferenceScreen() {
 		//The root of our system
@@ -296,6 +338,14 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                 testColor.setKey(packageList[i]+"_test");
         	testColor.setSummary(R.string.color_trackball_test_summary);
         	testColor.setTitle(R.string.color_trackball_test_title);
+		String[] packageInfo = findPackage(packageList[i]);
+		if(packageInfo != null) {
+            		if(packageInfo[2].matches("none")) {
+                		testColor.setEnabled(false);
+            		} else {
+                		testColor.setEnabled(true);
+            		}
+		}
         	appName.addPreference(testColor);
         }
 
@@ -369,9 +419,17 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         String key = preference.getKey().toString();
         String pkg = key.substring(0, key.lastIndexOf("_"));
         if(key.endsWith("_blink")) {
-            updatePackage(pkg, "", value);
+            updatePackage(pkg, "", value, "0");
         } else if (key.endsWith("_color")) {
-            updatePackage(pkg, value, "0");
+            updatePackage(pkg, value, "0", "0");
+
+	    PreferenceScreen prefSet = getPreferenceScreen();
+            globalTest = prefSet.findPreference(pkg+"_test");
+	    if(value.matches("none")) {
+		globalTest.setEnabled(false);
+	    } else {
+		globalTest.setEnabled(true);
+	    }
 	}
 
         return true;
@@ -548,7 +606,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
             }
 
             public void colorChanged(int color) {
-		updatePackage(mGlobalPackage, convertToARGB(color), "0");
+		updatePackage(mGlobalPackage, convertToARGB(color), "0", "0");
             }
     };
 
