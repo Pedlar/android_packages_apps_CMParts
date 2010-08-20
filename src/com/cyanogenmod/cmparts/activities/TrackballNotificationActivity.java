@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Random;
 import android.os.Handler;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.Arrays;
 
 public class TrackballNotificationActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener {
@@ -119,7 +120,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 				continue;
 			}
 			if(temp2[0].matches(pkg)) {
-                                if(!cat.matches("0") {
+                                if(!cat.matches("0")) {
                                         temp2[3] = cat;
                                 }
 				else if(!blink.matches("0")) {
@@ -259,13 +260,13 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         	return list;
 	}
 
-        private getCategoryList() {
+        private String[] getCategoryList() {
                 String mBaseString = Settings.System.getString(getContentResolver(), Settings.System.NOTIFICATION_PACKAGE_COLORS);
 		String[] mBaseArray = getArray(mBaseString);
-                String[] catList;
+                String[] catList = new String[30];
                 boolean found = false;
 		for(int i = 0; i < mBaseArray.length; i++) {
-			String[] temp getPackageAndColorAndBlink(mBaseArray[i]);
+			String[] temp = getPackageAndColorAndBlink(mBaseArray[i]);
                         if(isNull(temp[3])) {
                                 continue;
                         }
@@ -333,9 +334,9 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         	testColor.setTitle(R.string.color_trackball_test_title);
 		String[] packageInfo = findPackage(packageList[i]);
             	if(packageInfo[2].matches("none")) {
-                	testColor.isEnabled(false);
+                	testColor.setEnabled(false);
             	} else {
-                	testColor.isEnabled(true);
+                	testColor.setEnabled(true);
             	}
         	appName.addPreference(testColor);
         }
@@ -412,14 +413,14 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         if(key.endsWith("_blink")) {
             updatePackage(pkg, "", value, "0");
         } else if (key.endsWith("_color")) {
-            updatePackage(pkg, value, "0");
+            updatePackage(pkg, value, "0", "0");
 
 	    PreferenceScreen prefSet = getPreferenceScreen();
             globalTest = prefSet.findPreference(pkg+"_test");
-	    if(values.matches("none")) {
-		globalTest.isEnabled(false);
+	    if(value.matches("none")) {
+		globalTest.setEnabled(false);
 	    } else {
-		globalTest.isEnabled(true);
+		globalTest.setEnabled(true);
 	    }
 	}
 
