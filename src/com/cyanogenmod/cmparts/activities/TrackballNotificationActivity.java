@@ -333,11 +333,13 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         	testColor.setSummary(R.string.color_trackball_test_summary);
         	testColor.setTitle(R.string.color_trackball_test_title);
 		String[] packageInfo = findPackage(packageList[i]);
-            	if(packageInfo[2].matches("none")) {
-                	testColor.setEnabled(false);
-            	} else {
-                	testColor.setEnabled(true);
-            	}
+		if(packageInfo != null) {
+            		if(packageInfo[2].matches("none")) {
+                		testColor.setEnabled(false);
+            		} else {
+                		testColor.setEnabled(true);
+            		}
+		}
         	appName.addPreference(testColor);
         }
 
