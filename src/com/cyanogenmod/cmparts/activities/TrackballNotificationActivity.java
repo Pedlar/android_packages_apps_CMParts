@@ -37,6 +37,11 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 	public int mGlobalPulse = 0;
 	public int mGlobalSuccession = 0;
 	public int mGlobalBlend = 0;
+	public CheckBoxPreference globalSuccession;
+	public CheckBoxPreference globalRandom;
+	public CheckBoxPreference globalOrder;
+	public CheckBoxPreference globalBlend;
+	public Preference globalTest;
 
 	public boolean isNull(String mString) {
 		if(mString == null || mString.matches("null")
@@ -290,6 +295,12 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                 testColor.setKey(packageList[i]+"_test");
         	testColor.setSummary(R.string.color_trackball_test_summary);
         	testColor.setTitle(R.string.color_trackball_test_title);
+		String[] packageInfo = findPackage(packageList[i]);
+            	if(packageInfo[2].matches("none")) {
+                	testColor.isEnabled(false);
+            	} else {
+                	testColor.isEnabled(true);
+            	}
         	appName.addPreference(testColor);
         }
 
@@ -366,6 +377,14 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
             updatePackage(pkg, "", value);
         } else if (key.endsWith("_color")) {
             updatePackage(pkg, value, "0");
+
+	    PreferenceScreen prefSet = getPreferenceScreen();
+            globalTest = prefSet.findPreference(pkg+"_test");
+	    if(values.matches("none")) {
+		globalTest.isEnabled(false);
+	    } else {
+		globalTest.isEnabled(true);
+	    }
 	}
 
         return true;
