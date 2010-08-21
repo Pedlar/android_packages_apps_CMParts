@@ -140,7 +140,6 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 				temp[i] = tempcolor;
 			} catch (ArrayIndexOutOfBoundsException e) {
 				//Making array changes, if they aren't new, they will error. Have to force them to be reset unfortunately.
-				//Pedlar
 				Settings.System.putString(getContentResolver(), Settings.System.NOTIFICATION_PACKAGE_COLORS, "");
 				Toast.makeText(this, "Unfortunately there was an array error. Your colors have been reset, we apologize for any inconveience.", Toast.LENGTH_LONG).show();
 			}
@@ -287,6 +286,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                 } else {
                       return uniqueArray(catList);
                 }
+		return (found ? uniqueArray(catList); : null);
         }
 
 	private PreferenceScreen createPreferenceScreen() {
@@ -341,9 +341,8 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                 testColor.setKey(packageList[i]+"_test");
         	testColor.setSummary(R.string.color_trackball_test_summary);
         	testColor.setTitle(R.string.color_trackball_test_title);
-      		if(packageValues != null) {
-			Log.i("MakeList", "Checking if "+packageValues[0]+" has color "+packageValues[1]);
-                	testColor.setEnabled(!packageValues[1].equals("none"));
+		if(packageValues != null) {
+			testColor.setEnabled(!packageValues[1].equals("none"));
 		}
         	appName.addPreference(testColor);
         }
@@ -424,11 +423,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 
 	    PreferenceScreen prefSet = getPreferenceScreen();
             globalTest = prefSet.findPreference(pkg+"_test");
-	    if(value.matches("none")) {
-		globalTest.setEnabled(false);
-	    } else {
-		globalTest.setEnabled(true);
-	    }
+	    globalTest.setEnables(!value.matches("none"));
 	}
 
         return true;
