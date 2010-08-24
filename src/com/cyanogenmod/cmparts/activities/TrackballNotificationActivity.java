@@ -139,11 +139,15 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 			}
 		}
 		if(found) {
-			if(temp2[3] == null) {
-				temp2[3] = "New";
+			try {
+				String tempcolor = temp2[0] +"="+temp2[1]+"="+temp2[2]+"="+temp2[3];
+				temp[i] = tempcolor;
+			} catch (ArrayIndexOutOfBoundsException e) {
+				//Making array changes, if they aren't new, they will error. Have to force them to be reset unfortunately.
+				Settings.System.putString(getContentResolver(), Settings.System.NOTIFICATION_PACKAGE_COLORS, "");
+				Toast.makeText(this, "Unfortunately there was an array error. Your colors have been reset, we apologize for any inconveience.", Toast.LENGTH_LONG).show();
+				return; // we want to end it here, no need to continue
 			}
-			String tempcolor = temp2[0] +"="+temp2[1]+"="+temp2[2]+"="+temp2[3];
-			temp[i] = tempcolor;
 		} else {
 			int x = 0;
 			//Get the last one
@@ -282,11 +286,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                         catList[i] = temp[3];
                         found = true;
 		}
-                if(!found) {
-		      return null;
-                } else {
-                      return uniqueArray(catList);
-                }
+		return (found ? uniqueArray(catList) : null);
         }
 
 	private PreferenceScreen createPreferenceScreen() {
@@ -341,15 +341,8 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                 testColor.setKey(packageList[i]+"_test");
         	testColor.setSummary(R.string.color_trackball_test_summary);
         	testColor.setTitle(R.string.color_trackball_test_title);
-		String[] packageInfo = findPackage(packageList[i]);
-		if(packageInfo != null) {
-			Log.i("MakeList", "Check for none in "+packageList[i]);
-            		if(packageInfo[2].matches("none")) {
-				Log.i("MakeList", "Found none");
-                		testColor.setEnabled(false);
-            		} else {
-                		testColor.setEnabled(true);
-            		}
+		if(packageValues != null) { //Check if the color is none, if it is disable Test.
+			testColor.setEnabled(!packageValues[1].equals("none"));
 		}
         	appName.addPreference(testColor);
         }
@@ -430,11 +423,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 
 	    PreferenceScreen prefSet = getPreferenceScreen();
             globalTest = prefSet.findPreference(pkg+"_test");
-	    if(value.matches("none")) {
-		globalTest.setEnabled(false);
-	    } else {
-		globalTest.setEnabled(true);
-	    }
+	    globalTest.setEnabled(!value.matches("none"));
 	}
 
         return true;
