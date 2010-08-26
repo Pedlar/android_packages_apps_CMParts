@@ -23,7 +23,9 @@ import android.preference.PreferenceScreen;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
-
+import android.widget.EditText;
+import android.view.LayoutInflater;
+import android.view.View;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,32 +40,22 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         Preference.OnPreferenceChangeListener {
 
     private static final int NOTIFICATION_ID = 400;
-
     public static String[] mPackage;
-
     public String mPackageSource;
-
     public Handler mHandler = new Handler();
-
     public ProgressDialog pbarDialog;
-
     public String mGlobalPackage;
-
     public int mGlobalPulse = 0;
-
     public int mGlobalSuccession = 0;
-
     public int mGlobalBlend = 0;
-
     public CheckBoxPreference globalSuccession;
-
     public CheckBoxPreference globalRandom;
-
     public CheckBoxPreference globalOrder;
-
     public CheckBoxPreference globalBlend;
-
     public Preference globalTest;
+
+    public String mCatListString;
+    public SharedPreferences mPrefs;
 
     public String[] uniqueArray(String[] array) {
         Set<String> set = new HashSet<String>(Arrays.asList(array));
@@ -211,7 +203,6 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         } else {
             notification.ledARGB = Color.parseColor(mTestPackage[1]);
         }
-
         notification.ledOnMS = 500;
         notification.ledOffMS = mBlinkRate * 1000;
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -300,7 +291,6 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
     }
 
     private PreferenceScreen createPreferenceScreen() {
-
         // The root of our system
         PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
 
@@ -320,6 +310,7 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         blendPulse.setKey("blend_colors");
         blendPulse.setSummary(R.string.pref_trackball_blend_summary);
         blendPulse.setTitle(R.string.pref_trackball_blend_title);
+	blendPulse.setEnabled(Settings.System.getInt(getContentResolver(), Settings.System.TRACKBALL_NOTIFICATION_SUCCESSION, 0) == 1 ? false : true);
         advancedScreen.addPreference(blendPulse);
 
         CheckBoxPreference successionPulse = new CheckBoxPreference(this);
@@ -332,12 +323,14 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         randomPulse.setKey("pulse_random_colors");
         randomPulse.setSummary(R.string.pref_trackball_random_summary);
         randomPulse.setTitle(R.string.pref_trackball_random_title);
+	randomPulse.setEnabled(Settings.System.getInt(getContentResolver(), Settings.System.TRACKBALL_NOTIFICATION_BLEND_COLOR, 0) == 1 ? false : true);
         advancedScreen.addPreference(randomPulse);
 
         CheckBoxPreference orderPulse = new CheckBoxPreference(this);
         orderPulse.setKey("pulse_colors_in_order");
         orderPulse.setSummary(R.string.pref_trackball_order_summary);
         orderPulse.setTitle(R.string.pref_trackball_order_title);
+	orderPulse.setEnabled(Settings.System.getInt(getContentResolver(), Settings.System.TRACKBALL_NOTIFICATION_BLEND_COLOR, 0) == 1 ? false : true);
         advancedScreen.addPreference(orderPulse);
 
         Preference resetColors = new Preference(this);
@@ -423,19 +416,24 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         }
     };
 
+    public void loadPrefs() {
+	pbarDialog = ProgressDialog.show(this, getString(R.string.dialog_trackball_loading), getString(R.string.dialog_trackball_packagelist), true, false);
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        mCatListString = mPrefs.getString("category_list", "New|");
+        Thread t = new Thread() {
+                public void run() {
+                        setPreferenceScreen(createPreferenceScreen());
+                        mHandler.post(mFinishLoading);
+                }
+        };
+        t.start();
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setTitle(R.string.trackball_notifications_title);
-        pbarDialog = ProgressDialog.show(this, getString(R.string.dialog_trackball_loading),
-                getString(R.string.dialog_trackball_packagelist), true, false);
-        Thread t = new Thread() {
-            public void run() {
-                setPreferenceScreen(createPreferenceScreen());
-                mHandler.post(mFinishLoading);
-            }
-        };
-        t.start();
+	loadPrefs();
     }
 
     public boolean onPreferenceChange(Preference preference, Object objValue) {
