@@ -1,3 +1,4 @@
+
 package com.cyanogenmod.cmparts.activities;
 
 import com.cyanogenmod.cmparts.R;
@@ -16,9 +17,12 @@ import android.provider.Settings;
 import java.io.File;
 import android.util.Log;
 import android.widget.Toast;
+import android.widget.EditText;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.app.ProgressDialog;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
 import java.util.List;
@@ -27,6 +31,9 @@ import android.os.Handler;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Arrays;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.preference.PreferenceManager;
 
 public class TrackballNotificationActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener {
 
@@ -45,6 +52,9 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 	public CheckBoxPreference globalOrder;
 	public CheckBoxPreference globalBlend;
 	public Preference globalTest;
+
+	public String mCatListString;
+	public SharedPreferences mPrefs;
 
         public String[] uniqueArray(String[] array) {
                 Set set = new HashSet(Arrays.asList(array));
@@ -274,80 +284,132 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 		String[] mBaseArray = getArray(mBaseString);
                 String[] catList = new String[30];
                 boolean found = false;
+		int x = 1;
+		catList[0] = "New";
 		for(int i = 0; i < mBaseArray.length; i++) {
 			String[] temp = getPackageAndColorAndBlink(mBaseArray[i]);
-                        if(isNull(temp[3])) {
+                        if(temp == null || isNull(temp[3])) {
                                 continue;
                         }
-                        catList[i] = temp[3];
+                        catList[x] = temp[3];
                         found = true;
+			x++;
 		}
-		return (found ? uniqueArray(catList) : null);
+		return (uniqueArray(catList));
         }
 
 	private PreferenceScreen createPreferenceScreen() {
 		//The root of our system
+		String[] catList = getCategoryList();
 		String[] packageList = getPackageList();
 		PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
 
-		for(int i = 0; i < packageList.length; i++) {
-        		if(isNull(packageList[i]))
-        			continue;
+		for(int x = 0; x < catList.length; x++) {
+			if(isNull(catList[x]))
+				continue;
 
-		String[] packageValues = findPackage(packageList[i]);
-        	String packageName = getPackageName(packageList[i]);
-        	PreferenceScreen appName = getPreferenceManager().createPreferenceScreen(this);
-        	appName.setKey(packageList[i] + "_screen");
-        	appName.setTitle(packageName);
-        	root.addPreference(appName);
+			PreferenceScreen catName = getPreferenceManager().createPreferenceScreen(this);
+                        catName.setKey(catList[x] + "_screen");
+                        catName.setTitle(catList[x]);
+			root.addPreference(catName);
 
-        	ListPreference colorList = new ListPreference(this);
-                colorList.setKey(packageList[i]+"_color");
-        	colorList.setTitle(R.string.color_trackball_flash_title);
-        	colorList.setSummary(R.string.color_trackball_flash_summary);
-        	colorList.setDialogTitle(R.string.dialog_color_trackball);
-        	colorList.setEntries(R.array.entries_trackball_colors);
-		/*if(packageValues != null) {
-			colorList.setValue(packageValues[1]);
-		}*/
-        	colorList.setEntryValues(R.array.pref_trackball_colors_values);
-        	colorList.setOnPreferenceChangeListener(this);
-        	appName.addPreference(colorList);
+			for(int i = 0; i < packageList.length; i++) {
+        			if(isNull(packageList[i]))
+        				continue;
 
-        	ListPreference blinkList = new ListPreference(this);
-                blinkList.setKey(packageList[i]+"_blink");
-        	blinkList.setTitle(R.string.color_trackball_blink_title);
-        	blinkList.setSummary(R.string.color_trackball_blink_summary);
-        	blinkList.setDialogTitle(R.string.dialog_blink_trackball);
-        	blinkList.setEntries(R.array.pref_trackball_blink_rate_entries);
-        	blinkList.setEntryValues(R.array.pref_trackball_blink_rate_values);
-                /*if(packageValues != null) {
-                        blinkList.setValue(packageValues[2]);
-                }*/
-        	blinkList.setOnPreferenceChangeListener(this);
-        	appName.addPreference(blinkList);
+				String[] packageValues = findPackage(packageList[i]);
+				if(packageValues == null) {
+					if(!catList[x].matches("New")) {
+						continue;
+					}
+				} else {
+					if(!catList[x].matches(packageValues[3])) {
+						continue;
+					}
+				}
 
-                Preference customColor = new Preference(this);
-                customColor.setKey(packageList[i]+"_custom");
-                customColor.setSummary(R.string.color_trackball_custom_summary);
-                customColor.setTitle(R.string.color_trackball_custom_title);
-                appName.addPreference(customColor);
+        			String packageName = getPackageName(packageList[i]);
+				PreferenceScreen appName = getPreferenceManager().createPreferenceScreen(this);
+				appName.setKey(packageList[i] + "_screen");
+			   	appName.setTitle(packageName);
+				catName.addPreference(appName);
 
-        	Preference testColor = new Preference(this);
-                testColor.setKey(packageList[i]+"_test");
-        	testColor.setSummary(R.string.color_trackball_test_summary);
-        	testColor.setTitle(R.string.color_trackball_test_title);
-		if(packageValues != null) { //Check if the color is none, if it is disable Test.
-			testColor.setEnabled(!packageValues[1].equals("none"));
-		}
-        	appName.addPreference(testColor);
-        }
+                                String[] mList = getArray(mCatListString);
+                                ListPreference categoryList = new ListPreference(this);
+                                categoryList.setKey(packageList[i]+"_category");
+                                categoryList.setTitle(R.string.trackball_category_list_title);
+                                categoryList.setSummary(R.string.trackball_category_list_summary);
+                                categoryList.setDialogTitle(R.string.trackball_category_list_summary);
+                                categoryList.setEntries(mList);
+                                categoryList.setEntryValues(mList);
+                                categoryList.setOnPreferenceChangeListener(this);
+                                appName.addPreference(categoryList);
+
+				ListPreference colorList = new ListPreference(this);
+				colorList.setKey(packageList[i]+"_color");
+				colorList.setTitle(R.string.color_trackball_flash_title);
+				colorList.setSummary(R.string.color_trackball_flash_summary);
+				colorList.setDialogTitle(R.string.dialog_color_trackball);
+				colorList.setEntries(R.array.entries_trackball_colors);
+		        	colorList.setEntryValues(R.array.pref_trackball_colors_values);
+       			 	colorList.setOnPreferenceChangeListener(this);
+       			 	appName.addPreference(colorList);
+
+        			ListPreference blinkList = new ListPreference(this);
+             			blinkList.setKey(packageList[i]+"_blink");
+        			blinkList.setTitle(R.string.color_trackball_blink_title);
+       			 	blinkList.setSummary(R.string.color_trackball_blink_summary);
+        			blinkList.setDialogTitle(R.string.dialog_blink_trackball);
+        			blinkList.setEntries(R.array.pref_trackball_blink_rate_entries);
+        			blinkList.setEntryValues(R.array.pref_trackball_blink_rate_values);
+		        	blinkList.setOnPreferenceChangeListener(this);
+       			 	appName.addPreference(blinkList);
+
+		                Preference customColor = new Preference(this);
+		                customColor.setKey(packageList[i]+"_custom");
+		                customColor.setSummary(R.string.color_trackball_custom_summary);
+		                customColor.setTitle(R.string.color_trackball_custom_title);
+		                appName.addPreference(customColor);
+
+		        	Preference testColor = new Preference(this);
+		                testColor.setKey(packageList[i]+"_test");
+		        	testColor.setSummary(R.string.color_trackball_test_summary);
+		        	testColor.setTitle(R.string.color_trackball_test_title);
+				if(packageValues != null) { //Check if the color is none, if it is disable Test.
+					testColor.setEnabled(!packageValues[1].equals("none"));
+				}
+		        	appName.addPreference(testColor);
+        	}
+	}
 
         /*Advanced*/
         PreferenceScreen advancedScreen = getPreferenceManager().createPreferenceScreen(this);
         advancedScreen.setKey("advanced_screen");
         advancedScreen.setTitle(R.string.trackball_advanced_title);
     	root.addPreference(advancedScreen);
+
+	/* Manage Categories */
+        PreferenceScreen catScreen = getPreferenceManager().createPreferenceScreen(this);
+        catScreen.setKey("category_screen");
+        catScreen.setTitle(R.string.trackball_category_screen);
+        advancedScreen.addPreference(catScreen);
+
+	Preference addCat = new Preference(this);
+        addCat.setKey("add_category");
+        addCat.setSummary(R.string.trackball_category_add_title);
+        addCat.setTitle(R.string.trackball_category_add_summary);
+        catScreen.addPreference(addCat);
+
+	String[] mRemoveList = getArray(mCatListString);
+        ListPreference removeCatList = new ListPreference(this);
+        removeCatList.setKey("remove_category");
+        removeCatList.setTitle(R.string.trackball_category_remove_title);
+        removeCatList.setSummary(R.string.trackball_category_remove_summary);
+        removeCatList.setDialogTitle(R.string.trackball_category_list_summary);
+        removeCatList.setEntries(mRemoveList);
+        removeCatList.setEntryValues(mRemoveList);
+        removeCatList.setOnPreferenceChangeListener(this);
+        catScreen.addPreference(removeCatList);
 
     	CheckBoxPreference alwaysPulse = new CheckBoxPreference(this);
     	alwaysPulse.setKey("always_pulse");
@@ -359,24 +421,28 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         blendPulse.setKey("blend_colors");
         blendPulse.setSummary(R.string.pref_trackball_blend_summary);
         blendPulse.setTitle(R.string.pref_trackball_blend_title);
+	blendPulse.setEnabled(Settings.System.getInt(getContentResolver(), Settings.System.TRACKBALL_NOTIFICATION_SUCCESSION, 0) == 1 ? false : true);
         advancedScreen.addPreference(blendPulse);
 
     	CheckBoxPreference successionPulse = new CheckBoxPreference(this);
     	successionPulse.setKey("pulse_succession");
     	successionPulse.setSummary(R.string.pref_trackball_sucess_summary);
     	successionPulse.setTitle(R.string.pref_trackball_sucess_title);
+	successionPulse.setEnabled(Settings.System.getInt(getContentResolver(), Settings.System.TRACKBALL_NOTIFICATION_BLEND_COLOR, 0) == 1 ? false : true);
     	advancedScreen.addPreference(successionPulse);
 
         CheckBoxPreference randomPulse = new CheckBoxPreference(this);
         randomPulse.setKey("pulse_random_colors");
         randomPulse.setSummary(R.string.pref_trackball_random_summary);
         randomPulse.setTitle(R.string.pref_trackball_random_title);
+	randomPulse.setEnabled(Settings.System.getInt(getContentResolver(), Settings.System.TRACKBALL_NOTIFICATION_BLEND_COLOR, 0) == 1 ? false : true);
         advancedScreen.addPreference(randomPulse);
 
         CheckBoxPreference orderPulse = new CheckBoxPreference(this);
         orderPulse.setKey("pulse_colors_in_order");
         orderPulse.setSummary(R.string.pref_trackball_order_summary);
         orderPulse.setTitle(R.string.pref_trackball_order_title);
+	orderPulse.setEnabled(Settings.System.getInt(getContentResolver(), Settings.System.TRACKBALL_NOTIFICATION_BLEND_COLOR, 0) == 1 ? false : true);
         advancedScreen.addPreference(orderPulse);
 
     	Preference resetColors = new Preference(this);
@@ -394,18 +460,24 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 	}
     };
 
+    public void loadPrefs() {
+	pbarDialog = ProgressDialog.show(this, getString(R.string.dialog_trackball_loading), getString(R.string.dialog_trackball_packagelist), true, false);
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        mCatListString = mPrefs.getString("category_list", "New|");
+        Thread t = new Thread() {
+                public void run() {
+                        setPreferenceScreen(createPreferenceScreen());
+                        mHandler.post(mFinishLoading);
+                }
+        };
+        t.start();
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setTitle(R.string.trackball_notifications_title);
-	pbarDialog = ProgressDialog.show(this, getString(R.string.dialog_trackball_loading), getString(R.string.dialog_trackball_packagelist), true, false);
-    	Thread t = new Thread() {
-		public void run() {
-			setPreferenceScreen(createPreferenceScreen());
-			mHandler.post(mFinishLoading);
-		}
-	};
-	t.start();
+	loadPrefs();
     }
 
     public boolean onPreferenceChange(Preference preference, Object objValue) {
@@ -420,7 +492,20 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 	    PreferenceScreen prefSet = getPreferenceScreen();
             globalTest = prefSet.findPreference(pkg+"_test");
 	    globalTest.setEnabled(!value.matches("none"));
-	}
+        } else if (key.equals("remove_category")) {
+		mCatListString = mCatListString.replace("|" + value, "");
+                Editor mEdit = mPrefs.edit();
+                mEdit.putString("category_list", mCatListString);
+                mEdit.commit();
+		loadPrefs();
+		PreferenceScreen prefSet = getPreferenceScreen();
+		ListPreference removeList = (ListPreference)prefSet.findPreference("remove_category");
+		removeList.setEntries(getArray(mCatListString));
+	        removeList.setEntryValues(getArray(mCatListString));
+	} else if(key.endsWith("_category")) {
+                updatePackage(pkg, "", "0", value);
+                loadPrefs();
+        }
 
         return true;
     }
@@ -431,6 +516,33 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         if (preference.getKey().toString().equals("reset_notifications")) {
         	Settings.System.putString(getContentResolver(), Settings.System.NOTIFICATION_PACKAGE_COLORS, "");
         	Toast.makeText(this, "Reset all colors", Toast.LENGTH_LONG).show();
+	} else if(preference.getKey().toString().equals("add_category")) {
+		alertDialog = new AlertDialog.Builder(this).create();
+                LayoutInflater factory = LayoutInflater.from(this);
+           	final View textEntryView = factory.inflate(R.layout.add_cat, null);
+		alertDialog.setTitle(R.string.trackball_category_add_title);
+                alertDialog.setView(textEntryView);
+                alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Ok", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+			//updateCatList(value.toString(), false);
+			EditText textBox = (EditText) textEntryView.findViewById(R.id.cat_text);
+			mCatListString = mCatListString + textBox.getText().toString() + "|";
+			Editor mEdit = mPrefs.edit();
+			mEdit.putString("category_list", mCatListString);
+			mEdit.commit();
+			loadPrefs();
+			PreferenceScreen prefSet = getPreferenceScreen();
+	                ListPreference removeList = (ListPreference)prefSet.findPreference("remove_category");
+        	        removeList.setEntries(getArray(mCatListString));
+	                removeList.setEntryValues(getArray(mCatListString));
+                        return;
+                } });
+                alertDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+
+                        return;
+                }});
+                alertDialog.show();
         } else if (preference.getKey().toString().equals("always_pulse")) {
         	CheckBoxPreference keyPref = (CheckBoxPreference) preference;
         	value = keyPref.isChecked();
@@ -439,6 +551,15 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
         } else if (preference.getKey().toString().equals("pulse_succession")) {
        		final CheckBoxPreference keyPref = (CheckBoxPreference) preference;
             	value = keyPref.isChecked();
+		if(!value) {
+                        PreferenceScreen prefSet = getPreferenceScreen();
+                        CheckBoxPreference disablePref = (CheckBoxPreference)prefSet.findPreference("blend_colors");
+                        disablePref.setEnabled(true);
+                } else {
+                        PreferenceScreen prefSet = getPreferenceScreen();
+                        CheckBoxPreference disablePref = (CheckBoxPreference)prefSet.findPreference("blend_colors");
+                        disablePref.setEnabled(false);
+                }
                 if(value == false) {
                         Settings.System.putInt(getContentResolver(),
                         Settings.System.TRACKBALL_NOTIFICATION_SUCCESSION, 0);
@@ -465,6 +586,15 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 	} else if (preference.getKey().toString().equals("pulse_random_colors")) {
                 final CheckBoxPreference keyPref = (CheckBoxPreference) preference;
                 value = keyPref.isChecked();
+		if(!value) {
+                        PreferenceScreen prefSet = getPreferenceScreen();
+                        CheckBoxPreference disablePref = (CheckBoxPreference)prefSet.findPreference("blend_colors");
+                        disablePref.setEnabled(true);
+                } else {
+                        PreferenceScreen prefSet = getPreferenceScreen();
+                        CheckBoxPreference disablePref = (CheckBoxPreference)prefSet.findPreference("blend_colors");
+                        disablePref.setEnabled(false);
+                }
                 if(value == false) {
                         Settings.System.putInt(getContentResolver(),
                         Settings.System.TRACKBALL_NOTIFICATION_RANDOM, 0);
@@ -492,6 +622,15 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
 	} else if (preference.getKey().toString().equals("pulse_colors_in_order")) {
                 final CheckBoxPreference keyPref = (CheckBoxPreference) preference;
                 value = keyPref.isChecked();
+		if(!value) {
+                	PreferenceScreen prefSet = getPreferenceScreen();
+                	CheckBoxPreference disablePref = (CheckBoxPreference)prefSet.findPreference("blend_colors");
+                	disablePref.setEnabled(true);
+                } else {
+                	PreferenceScreen prefSet = getPreferenceScreen();
+                	CheckBoxPreference disablePref = (CheckBoxPreference)prefSet.findPreference("blend_colors");
+                	disablePref.setEnabled(false);
+                }
 		if(value == false) {
 			Settings.System.putInt(getContentResolver(),
                         Settings.System.TRACKBALL_NOTIFICATION_PULSE_ORDER, 0);
@@ -519,6 +658,24 @@ public class TrackballNotificationActivity extends PreferenceActivity implements
                 final CheckBoxPreference keyPref = (CheckBoxPreference) preference;
                 value = keyPref.isChecked();
                 Settings.System.putInt(getContentResolver(), Settings.System.TRACKBALL_NOTIFICATION_BLEND_COLOR, value ? 1 : 0);
+                if(!value) {
+                	PreferenceScreen prefSet = getPreferenceScreen();
+                	CheckBoxPreference disablePref = (CheckBoxPreference)prefSet.findPreference("pulse_succession");
+                	disablePref.setEnabled(true);
+                        disablePref = (CheckBoxPreference)prefSet.findPreference("pulse_random_colors");
+                        disablePref.setEnabled(true);
+                        disablePref = (CheckBoxPreference)prefSet.findPreference("pulse_colors_in_order");
+                        disablePref.setEnabled(true);
+
+                } else {
+                	PreferenceScreen prefSet = getPreferenceScreen();
+                	CheckBoxPreference disablePref = (CheckBoxPreference)prefSet.findPreference("pulse_succession");
+                	disablePref.setEnabled(false);
+			disablePref = (CheckBoxPreference)prefSet.findPreference("pulse_random_colors");
+                        disablePref.setEnabled(false);
+                        disablePref = (CheckBoxPreference)prefSet.findPreference("pulse_colors_in_order");
+                        disablePref.setEnabled(false);
+                }
 	} else if(preference.getKey().toString().endsWith("_custom")) {
             String pkg = preference.getKey().toString().substring(0, preference.getKey().toString().lastIndexOf("_"));
 	    mGlobalPackage = pkg;
