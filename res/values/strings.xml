@@ -134,6 +134,14 @@
     <string name="pref_trackball_reset_summary">Reset all colors and apps</string>
     <string name="dialog_trackball_loading">Loading...</string>
     <string name="dialog_trackball_packagelist">Loading Package List</string>
+    <string name="trackall_color_dialog_text">Pleas enter a new category</string>
+    <string name="trackball_category_list_title">Category</string>
+    <string name="trackball_category_list_summary">Choose a category</string>
+    <string name="trackball_category_screen">Manage Categories</string>
+    <string name="trackball_category_add_title">Add category</string>
+    <string name="trackball_category_add_summary">Add a category to the list</string>
+    <string name="trackball_category_remove_title">Remove category</string>
+    <string name="trackball_category_remove_summary">Remove a category from the list</string>
 
     <!-- Trackball Settings : Warning dialog -->
     <string name="notification_battery_warning_title">WARNING: May Cause Battery Drain</string>
@@ -363,6 +371,7 @@
 
     <!-- Sound -->
     <string name="sound_title">Sound settings</string>
+    <string name="sound_summary">Sound and audio focus settings</string>
     <string name="sound_notifications_focus_title">Notification focus</string>
     <string name="sound_notifications_focus_summary">Audio focus requests causes compatible apps to lower the volume while notifications play.</string>
     <string name="sound_to_speaker_title">Always play on speaker</string>
