@@ -16,7 +16,9 @@
 
 package com.cyanogenmod.cmparts.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.RemoteException;
@@ -29,6 +31,8 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.provider.Settings;
+import android.net.Uri;
+import android.util.Log;
 
 import com.cyanogenmod.cmparts.R;
 
@@ -52,6 +56,10 @@ public class UIActivity extends PreferenceActivity implements OnPreferenceChange
     private PreferenceScreen mExtrasScreen;
 
     /* Other */
+    private static final String BOOTANIMATION_PREF = "pref_bootanimation";
+
+    private static final String BOOTANIMATION_RESET_PREF = "pref_bootanimation_reset";
+
     private static final String PINCH_REFLOW_PREF = "pref_pinch_reflow";
 
     private static final String RENDER_EFFECT_PREF = "pref_render_effect";
@@ -71,6 +79,18 @@ public class UIActivity extends PreferenceActivity implements OnPreferenceChange
     private ListPreference mOverscrollPref;
 
     private ListPreference mOverscrollWeightPref;
+
+    private PreferenceScreen mBootPref;
+
+    private PreferenceScreen mBootReset;
+
+    private static final int REQUEST_CODE_PICK_FILE = 999;
+
+    private static final int REQUEST_CODE_MOVE_FILE = 1000;
+
+    private static final String MOVE_BOOT_INTENT = "com.cyanogenmod.cmbootanimation.MOVE_BOOTANIMATION";
+
+    private static final String BOOT_RESET = "com.cyanogenmod.cmbootanimation.RESET_DEFAULT";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -92,6 +112,10 @@ public class UIActivity extends PreferenceActivity implements OnPreferenceChange
             ((PreferenceCategory) prefSet.findPreference(GENERAL_CATEGORY))
                     .removePreference(mTrackballScreen);
         }
+
+        /* Boot Animation Chooser */
+        mBootPref = (PreferenceScreen) prefSet.findPreference(BOOTANIMATION_PREF);
+        mBootReset = (PreferenceScreen) prefSet.findPreference(BOOTANIMATION_RESET_PREF);
 
         /* Pinch reflow */
         mPinchReflowPref = (CheckBoxPreference) prefSet.findPreference(PINCH_REFLOW_PREF);
@@ -143,6 +167,16 @@ public class UIActivity extends PreferenceActivity implements OnPreferenceChange
             value = mPowerPromptPref.isChecked();
             Settings.System.putInt(getContentResolver(), Settings.System.POWER_DIALOG_PROMPT,
                     value ? 1 : 0);
+            return true;
+        } else if (preference == mBootPref) {
+            Intent intent = new Intent("org.openintents.action.PICK_FILE");
+            intent.setData(Uri.parse("file:///sdcard/"));
+            intent.putExtra("org.openintents.extra.TITLE", "Please select a file");
+            startActivityForResult(intent, REQUEST_CODE_PICK_FILE);
+            return true;
+        } else if (preference == mBootReset) {
+            Intent intent = new Intent(BOOT_RESET);
+            sendBroadcast(intent);
             return true;
         }
         return false;
@@ -220,5 +254,29 @@ public class UIActivity extends PreferenceActivity implements OnPreferenceChange
         public void colorUpdate(int color) {
         }
     };
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode) {
+            case REQUEST_CODE_PICK_FILE:
+                if (resultCode == RESULT_OK && data != null) {
+                    // obtain the filename
+                    Uri fileUri = data.getData();
+                    if (fileUri != null) {
+                        String filePath = fileUri.getPath();
+                        if (filePath != null) {
+                            Log.v("CMParts", "Sending intent: " + MOVE_BOOT_INTENT + " file: " + filePath);
+                            Intent mvBootIntent = new Intent();
+                            mvBootIntent.setAction(MOVE_BOOT_INTENT);
+                            mvBootIntent.putExtra("fileName", filePath);
+                            sendBroadcast(mvBootIntent);
+                        }
+                    }
+                }
+            break;
+        }
+    }
 
 }
